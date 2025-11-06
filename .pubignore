@@ -1,0 +1,4 @@
+# Files to exclude from package publication
+publication_plan.txt
+*.iml
+.DS_Store

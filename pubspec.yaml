@@ -1,0 +1,23 @@
+name: parsable
+description: Type-safe map parsing for Dart. Simplifies extracting values from Map<String, dynamic> with automatic type conversion and nested object support.
+version: 0.1.0
+homepage: https://github.com/LislaV208/parsable
+repository: https://github.com/LislaV208/parsable
+issue_tracker: https://github.com/LislaV208/parsable/issues
+
+topics:
+  - parsing
+  - json
+  - map
+  - type-safe
+  - serialization
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  equatable: ^2.0.7
+
+dev_dependencies:
+  test: ^1.26.3
+  lints: ^6.0.0
