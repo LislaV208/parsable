@@ -148,13 +148,18 @@ abstract class Parsable extends Equatable {
   /// ## Parameters
   ///
   /// - [name]: The key to look up in the data map.
-  /// - [parser]: Optional function to parse nested objects. Required when [T] is
-  ///   a custom [Parsable] type and the value is a [Map<String, dynamic>].
+  /// - [parser]: Optional function to parse values of type [V] to type [T].
+  ///   Thanks to type inference, you don't need to explicitly specify [T] and [V].
+  ///
+  /// ## Type Parameters
+  ///
+  /// - [T]: The target type you want to get
+  /// - [V]: The source type that the parser accepts (inferred from parser function)
   ///
   /// ## Type Conversions
   ///
   /// - Automatic `int` ↔ `double` conversion when [handleNumericConversions] is enabled (default).
-  /// - Nested objects require a [parser] function to convert from map to the target type.
+  /// - Custom parsing with [parser] function for any type conversions.
   ///
   /// ## Examples
   ///
@@ -164,8 +169,13 @@ abstract class Parsable extends Equatable {
   /// int? age = get('age');
   /// bool? active = get('active');
   ///
-  /// // Nested objects
+  /// // Nested objects (V inferred as Map<String, dynamic>)
   /// Address? address = get('address', parser: Address.fromMap);
+  ///
+  /// // Custom parsing (V inferred as String)
+  /// DateTime? createdAt = get('createdAt',
+  ///   parser: (String val) => DateTime.parse(val)
+  /// );
   ///
   /// // With default values
   /// String name = get('name') ?? 'Unknown';
@@ -175,29 +185,41 @@ abstract class Parsable extends Equatable {
   /// Returns `null` if:
   /// - The key doesn't exist in the data map
   /// - Type conversion fails
-  /// - A nested object is accessed without providing a [parser]
-  T? get<T>(String name, {T? Function(ParsableMap map)? parser}) {
+  /// - Parser throws an exception
+  /// - Value type doesn't match expected parser input type [V]
+  T? get<T, V>(String name, {T? Function(V value)? parser}) {
     var value = data[name];
     if (value == null) {
       return null;
     }
 
-    if (value is ParsableMap) {
-      if (parser != null) {
-        try {
+    // If parser is provided, try to use it
+    if (parser != null) {
+      try {
+        if (value is V) {
           return parser(value);
-        } catch (e) {
+        } else {
           _onParseError(
-            '[$runtimeType] Failed to parse property "$name": $e',
+            '[$runtimeType] Failed to parse property "$name": expected value of type "$V", got "${value.runtimeType}"',
           );
           return null;
         }
-      } else {
-        _onParseError(_buildErrorMessage<T>(name, value, noParser: true));
+      } catch (e) {
+        _onParseError(
+          '[$runtimeType] Failed to parse property "$name": $e',
+        );
         return null;
       }
     }
 
+    // If value is a map but no parser provided, this is an error
+    // (nested objects should use parser functions)
+    if (value is ParsableMap) {
+      _onParseError(_buildErrorMessage<T>(name, value, noParser: true));
+      return null;
+    }
+
+    // If no parser, continue with automatic conversions
     if (_handleNumericConversions && value is num) {
       if (T == double) {
         return value.toDouble() as T;
@@ -223,7 +245,12 @@ abstract class Parsable extends Equatable {
   /// ## Parameters
   ///
   /// - [name]: The key to look up in the data map.
-  /// - [parser]: Function to parse each list element from [Map<String, dynamic>] to [T].
+  /// - [parser]: Function to parse each list element from type [V] to [T].
+  ///
+  /// ## Type Parameters
+  ///
+  /// - [T]: The target type for each list element
+  /// - [V]: The source type that the parser accepts (inferred from parser function)
   ///
   /// ## Examples
   ///
@@ -231,14 +258,13 @@ abstract class Parsable extends Equatable {
   /// class Order extends Parsable {
   ///   const Order({required super.data});
   ///
-  ///   // Before: Manual parsing
-  ///   List<OrderItem> get itemsManual {
-  ///     final itemsList = data['items'] as List?;
-  ///     return itemsList?.map((item) => OrderItem.fromMap(item)).toList() ?? [];
-  ///   }
-  ///
-  ///   // After: Using getList
+  ///   // Parsing objects from maps (V inferred as Map<String, dynamic>)
   ///   List<OrderItem> get items => getList('items', parser: OrderItem.fromMap) ?? [];
+  ///
+  ///   // Parsing dates from strings (V inferred as String)
+  ///   List<DateTime> get dates => getList('dates',
+  ///     parser: (String val) => DateTime.parse(val)
+  ///   ) ?? [];
   ///
   ///   factory Order.fromMap(Map<String, dynamic> map) => Order(data: map);
   /// }
@@ -251,9 +277,9 @@ abstract class Parsable extends Equatable {
   /// Returns an empty list `[]` if:
   /// - The value is not a List (with error logged)
   /// - All items in the list failed to parse
-  List<T>? getList<T>(
+  List<T>? getList<T, V>(
     String name, {
-    required T Function(ParsableMap map) parser,
+    required T Function(V value) parser,
   }) {
     final value = data[name];
 
@@ -272,7 +298,7 @@ abstract class Parsable extends Equatable {
     for (var i = 0; i < value.length; i++) {
       final item = value[i];
 
-      if (item is ParsableMap) {
+      if (item is V) {
         try {
           final parsed = parser(item);
           results.add(parsed);
@@ -283,7 +309,7 @@ abstract class Parsable extends Equatable {
         }
       } else {
         _onParseError(
-          '[$runtimeType] List item at index $i in "$name" is not a Map. Expected "Map<String, dynamic>", got "${item.runtimeType}"',
+          '[$runtimeType] List item at index $i in "$name" has wrong type. Expected "$V", got "${item.runtimeType}"',
         );
       }
     }

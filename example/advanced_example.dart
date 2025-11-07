@@ -96,7 +96,7 @@ class Order extends Parsable {
   PaymentInfo? get payment => get('payment', parser: PaymentInfo.fromMap);
 
   DateTime? get orderDate {
-    final dateStr = get<String>('orderDate');
+    final String? dateStr = get('orderDate');
     return dateStr != null ? DateTime.tryParse(dateStr) : null;
   }
 

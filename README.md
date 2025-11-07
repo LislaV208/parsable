@@ -8,6 +8,7 @@ Type-safe map parsing for Dart. Simplifies extracting values from `Map<String, d
 ## Features
 
 - **Type-safe value extraction** - Get values with compile-time type safety
+- **Custom type parsing** - Parse any type with custom parser functions (String → DateTime, int, enums, etc.)
 - **Automatic type conversions** - Seamless `int` ↔ `double` conversions
 - **Nested object support** - Parse complex object hierarchies with ease
 - **List parsing** - Easy parsing of lists with `getList()` method
@@ -22,7 +23,7 @@ Add `parsable` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  parsable: ^0.1.0
+  parsable: ^0.2.0
 ```
 
 Then run:
@@ -170,6 +171,76 @@ void main() {
 }
 ```
 
+### Custom Type Parsing
+
+Parse any type using custom parser functions. Thanks to Dart's type inference, you don't need to explicitly specify type parameters:
+
+```dart
+class Event extends Parsable {
+  const Event({required super.data});
+
+  String? get name => get('name');
+
+  // Parse String to DateTime
+  DateTime? get startDate => get('startDate',
+    parser: (String val) => DateTime.parse(val)
+  );
+
+  // Parse String to int
+  int? get attendeeCount => get('attendeeCount',
+    parser: (String val) => int.parse(val)
+  );
+
+  // Parse String to custom enum
+  EventStatus get status => get('status',
+    parser: (String val) => EventStatus.fromString(val)
+  ) ?? EventStatus.pending;
+
+  // Parse list of date strings to list of DateTime objects
+  List<DateTime> get eventDates => getList('eventDates',
+    parser: (String val) => DateTime.parse(val)
+  ) ?? [];
+
+  factory Event.fromMap(Map<String, dynamic> map) => Event(data: map);
+}
+
+enum EventStatus {
+  pending,
+  confirmed,
+  cancelled;
+
+  static EventStatus fromString(String value) {
+    return EventStatus.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => EventStatus.pending,
+    );
+  }
+}
+
+void main() {
+  final eventData = {
+    'name': 'Tech Conference 2024',
+    'startDate': '2024-06-15T09:00:00Z',
+    'attendeeCount': '150',
+    'status': 'confirmed',
+    'eventDates': [
+      '2024-06-15T09:00:00Z',
+      '2024-06-16T09:00:00Z',
+      '2024-06-17T09:00:00Z',
+    ],
+  };
+
+  final event = Event.fromMap(eventData);
+  print(event.name); // Tech Conference 2024
+  print(event.startDate); // 2024-06-15 09:00:00.000Z
+  print(event.attendeeCount); // 150
+  print(event.status); // EventStatus.confirmed
+  print(event.eventDates.length); // 3
+}
+```
+
+The parser function receives the exact type you specify (e.g., `String`) and the compiler ensures type safety at compile time. If the value in the map doesn't match the expected type, an error will be logged and `null` will be returned.
+
 ### Complex Example with Multiple Nested Objects
 
 ```dart
@@ -198,10 +269,12 @@ class Order extends Parsable {
   const Order({required super.data});
 
   String? get orderId => get('orderId');
-  DateTime? get orderDate {
-    final dateStr = get<String>('orderDate');
-    return dateStr != null ? DateTime.tryParse(dateStr) : null;
-  }
+
+  // Parse ISO 8601 date string to DateTime
+  DateTime? get orderDate => get('orderDate',
+    parser: (String val) => DateTime.parse(val)
+  );
+
   Address? get shippingAddress => get('shippingAddress', parser: Address.fromMap);
   List<OrderItem> get items => getList('items', parser: OrderItem.fromMap) ?? [];
 
@@ -217,7 +290,7 @@ By default, `parsable` automatically converts between `int` and `double`:
 final data = {'count': 42}; // int value
 final obj = MyParsable(data: data);
 
-double? value = obj.get<double>('count'); // Returns 42.0
+double? value = obj.get('count'); // Returns 42.0 (automatic int→double conversion)
 ```
 
 To disable this behavior:

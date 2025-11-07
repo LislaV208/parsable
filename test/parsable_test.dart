@@ -259,7 +259,7 @@ void main() {
       });
 
       // Try to get address with the throwing parser
-      final address = testParsable.get<TestAddress>(
+      final address = testParsable.get(
         'address',
         parser: throwingParser,
       );
@@ -363,6 +363,133 @@ void main() {
       expect(resultMap, equals(originalMap));
       expect(resultMap['address'], isA<Map<String, dynamic>>());
       expect((resultMap['address'] as Map)['city'], equals('Capital City'));
+    });
+  });
+
+  group('Custom parser with generic types', () {
+    test('should parse String to DateTime using custom parser', () {
+      final testParsable = TestUser(data: {
+        'createdAt': '2024-01-15T10:30:00Z',
+      });
+
+      final createdAt = testParsable.get<DateTime, String>(
+        'createdAt',
+        parser: (String val) => DateTime.parse(val),
+      );
+
+      expect(createdAt, isNotNull);
+      expect(createdAt, isA<DateTime>());
+      expect(createdAt?.year, equals(2024));
+      expect(createdAt?.month, equals(1));
+      expect(createdAt?.day, equals(15));
+    });
+
+    test('should parse String to int using custom parser', () {
+      final testParsable = TestUser(data: {
+        'count': '42',
+      });
+
+      final count = testParsable.get<int, String>(
+        'count',
+        parser: (String val) => int.parse(val),
+      );
+
+      expect(count, equals(42));
+      expect(count, isA<int>());
+    });
+
+    test('should handle type inference without explicit type parameters', () {
+      final testParsable = TestUser(data: {
+        'timestamp': '2024-06-15T14:20:00Z',
+      });
+
+      // Type inference: T = DateTime, V = String
+      final DateTime? timestamp = testParsable.get(
+        'timestamp',
+        parser: (String val) => DateTime.parse(val),
+      );
+
+      expect(timestamp, isNotNull);
+      expect(timestamp, isA<DateTime>());
+    });
+
+    test('should return null when value type does not match parser input type',
+        () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      final testParsable = TestUser(data: {
+        'value': 123, // int, not String
+      });
+
+      final result = testParsable.get<DateTime, String>(
+        'value',
+        parser: (String val) => DateTime.parse(val),
+      );
+
+      expect(result, isNull);
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('expected value of type "String"'));
+      expect(errors.first, contains('got "int"'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
+    });
+
+    test('should parse list of strings to list of DateTimes', () {
+      final testParsable = TestUser(data: {
+        'dates': [
+          '2024-01-01T00:00:00Z',
+          '2024-06-15T12:00:00Z',
+          '2024-12-31T23:59:59Z',
+        ],
+      });
+
+      final List<DateTime>? dates = testParsable.getList(
+        'dates',
+        parser: (String val) => DateTime.parse(val),
+      );
+
+      expect(dates, isNotNull);
+      expect(dates?.length, equals(3));
+      expect(dates?[0].month, equals(1));
+      expect(dates?[1].month, equals(6));
+      expect(dates?[2].month, equals(12));
+    });
+
+    test('should skip items with wrong type in list', () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      final testParsable = TestUser(data: {
+        'dates': [
+          '2024-01-01T00:00:00Z', // valid String
+          123, // invalid - int instead of String
+          '2024-12-31T23:59:59Z', // valid String
+        ],
+      });
+
+      final List<DateTime>? dates = testParsable.getList(
+        'dates',
+        parser: (String val) => DateTime.parse(val),
+      );
+
+      expect(dates, isNotNull);
+      expect(dates?.length, equals(2)); // Only 2 valid items
+      expect(dates?[0].month, equals(1));
+      expect(dates?[1].month, equals(12));
+
+      // Should have logged error for item at index 1
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('index 1'));
+      expect(errors.first, contains('Expected "String"'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
     });
   });
 
