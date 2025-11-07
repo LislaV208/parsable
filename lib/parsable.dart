@@ -205,9 +205,7 @@ abstract class Parsable extends Equatable {
           return null;
         }
       } catch (e) {
-        _onParseError(
-          '[$runtimeType] Failed to parse property "$name": $e',
-        );
+        _onParseError('[$runtimeType] Failed to parse property "$name": $e');
         return null;
       }
     }
@@ -277,10 +275,7 @@ abstract class Parsable extends Equatable {
   /// Returns an empty list `[]` if:
   /// - The value is not a List (with error logged)
   /// - All items in the list failed to parse
-  List<T>? getList<T, V>(
-    String name, {
-    required T Function(V value) parser,
-  }) {
+  List<T>? getList<T, V>(String name, {required T Function(V value) parser}) {
     final value = data[name];
 
     if (value == null) {

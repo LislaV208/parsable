@@ -254,15 +254,14 @@ void main() {
       }
 
       // Create a test parsable with the throwing parser
-      final testParsable = TestUserWithAddress(data: {
-        'address': {'street': 'Test St', 'city': 'Test City'},
-      });
+      final testParsable = TestUserWithAddress(
+        data: {
+          'address': {'street': 'Test St', 'city': 'Test City'},
+        },
+      );
 
       // Try to get address with the throwing parser
-      final address = testParsable.get(
-        'address',
-        parser: throwingParser,
-      );
+      final address = testParsable.get('address', parser: throwingParser);
 
       // Should return null when parser throws
       expect(address, isNull);
@@ -368,9 +367,9 @@ void main() {
 
   group('Custom parser with generic types', () {
     test('should parse String to DateTime using custom parser', () {
-      final testParsable = TestUser(data: {
-        'createdAt': '2024-01-15T10:30:00Z',
-      });
+      final testParsable = TestUser(
+        data: {'createdAt': '2024-01-15T10:30:00Z'},
+      );
 
       final createdAt = testParsable.get<DateTime, String>(
         'createdAt',
@@ -385,9 +384,7 @@ void main() {
     });
 
     test('should parse String to int using custom parser', () {
-      final testParsable = TestUser(data: {
-        'count': '42',
-      });
+      final testParsable = TestUser(data: {'count': '42'});
 
       final count = testParsable.get<int, String>(
         'count',
@@ -399,9 +396,9 @@ void main() {
     });
 
     test('should handle type inference without explicit type parameters', () {
-      final testParsable = TestUser(data: {
-        'timestamp': '2024-06-15T14:20:00Z',
-      });
+      final testParsable = TestUser(
+        data: {'timestamp': '2024-06-15T14:20:00Z'},
+      );
 
       // Type inference: T = DateTime, V = String
       final DateTime? timestamp = testParsable.get(
@@ -413,39 +410,45 @@ void main() {
       expect(timestamp, isA<DateTime>());
     });
 
-    test('should return null when value type does not match parser input type',
-        () {
-      final errors = <String>[];
-      Parsable.setOnParseError((message) {
-        errors.add(message);
-      });
+    test(
+      'should return null when value type does not match parser input type',
+      () {
+        final errors = <String>[];
+        Parsable.setOnParseError((message) {
+          errors.add(message);
+        });
 
-      final testParsable = TestUser(data: {
-        'value': 123, // int, not String
-      });
+        final testParsable = TestUser(
+          data: {
+            'value': 123, // int, not String
+          },
+        );
 
-      final result = testParsable.get<DateTime, String>(
-        'value',
-        parser: (String val) => DateTime.parse(val),
-      );
+        final result = testParsable.get<DateTime, String>(
+          'value',
+          parser: (String val) => DateTime.parse(val),
+        );
 
-      expect(result, isNull);
-      expect(errors, isNotEmpty);
-      expect(errors.first, contains('expected value of type "String"'));
-      expect(errors.first, contains('got "int"'));
+        expect(result, isNull);
+        expect(errors, isNotEmpty);
+        expect(errors.first, contains('expected value of type "String"'));
+        expect(errors.first, contains('got "int"'));
 
-      // Reset error handler
-      Parsable.setOnParseError((message) {});
-    });
+        // Reset error handler
+        Parsable.setOnParseError((message) {});
+      },
+    );
 
     test('should parse list of strings to list of DateTimes', () {
-      final testParsable = TestUser(data: {
-        'dates': [
-          '2024-01-01T00:00:00Z',
-          '2024-06-15T12:00:00Z',
-          '2024-12-31T23:59:59Z',
-        ],
-      });
+      final testParsable = TestUser(
+        data: {
+          'dates': [
+            '2024-01-01T00:00:00Z',
+            '2024-06-15T12:00:00Z',
+            '2024-12-31T23:59:59Z',
+          ],
+        },
+      );
 
       final List<DateTime>? dates = testParsable.getList(
         'dates',
@@ -465,13 +468,15 @@ void main() {
         errors.add(message);
       });
 
-      final testParsable = TestUser(data: {
-        'dates': [
-          '2024-01-01T00:00:00Z', // valid String
-          123, // invalid - int instead of String
-          '2024-12-31T23:59:59Z', // valid String
-        ],
-      });
+      final testParsable = TestUser(
+        data: {
+          'dates': [
+            '2024-01-01T00:00:00Z', // valid String
+            123, // invalid - int instead of String
+            '2024-12-31T23:59:59Z', // valid String
+          ],
+        },
+      );
 
       final List<DateTime>? dates = testParsable.getList(
         'dates',
