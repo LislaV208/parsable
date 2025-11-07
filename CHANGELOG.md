@@ -1,3 +1,11 @@
+## 0.1.1
+
+* **Bug Fix**: Added exception handling for parser functions in `get<T>()` method
+  * Parser exceptions are now caught and handled gracefully
+  * Returns `null` and triggers error handler when parser throws an exception
+  * Consistent behavior with `getList<T>()` which already had exception handling
+* Updated test suite to 40 tests (added parser exception handling test)
+
 ## 0.1.0
 
 * Initial release of Parsable

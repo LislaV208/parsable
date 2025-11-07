@@ -241,6 +241,40 @@ void main() {
         Parsable.setOnParseError((message) {});
       },
     );
+
+    test('should handle exceptions thrown by parser function in get()', () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      // Create a parser that throws an exception
+      TestAddress throwingParser(Map<String, dynamic> map) {
+        throw Exception('Parser failed intentionally');
+      }
+
+      // Create a test parsable with the throwing parser
+      final testParsable = TestUserWithAddress(data: {
+        'address': {'street': 'Test St', 'city': 'Test City'},
+      });
+
+      // Try to get address with the throwing parser
+      final address = testParsable.get<TestAddress>(
+        'address',
+        parser: throwingParser,
+      );
+
+      // Should return null when parser throws
+      expect(address, isNull);
+
+      // Should have logged the error
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('Failed to parse property "address"'));
+      expect(errors.first, contains('Parser failed intentionally'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
+    });
   });
 
   group('Equatable functionality', () {

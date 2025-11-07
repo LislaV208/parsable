@@ -184,7 +184,14 @@ abstract class Parsable extends Equatable {
 
     if (value is ParsableMap) {
       if (parser != null) {
-        return parser(value);
+        try {
+          return parser(value);
+        } catch (e) {
+          _onParseError(
+            '[$runtimeType] Failed to parse property "$name": $e',
+          );
+          return null;
+        }
       } else {
         _onParseError(_buildErrorMessage<T>(name, value, noParser: true));
         return null;
