@@ -235,6 +235,89 @@ abstract class Parsable extends Equatable {
     return null;
   }
 
+  /// Extracts a [DateTime] value from the data map.
+  ///
+  /// This method reads a value by [name] and attempts to parse it as a
+  /// [DateTime]. If the value is already a [DateTime], it is returned as-is.
+  /// If the value is a [String], it is parsed using [DateTime.tryParse].
+  ///
+  /// Returns `null` if:
+  /// - The key doesn't exist in the data map
+  /// - The value is `null`
+  /// - The value is not a [String] or [DateTime]
+  /// - String parsing fails
+  DateTime? getDateTime(String name) {
+    final value = data[name];
+
+    if (value == null) {
+      return null;
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) {
+        return parsed;
+      }
+
+      _onParseError(
+        '[$runtimeType] Failed to parse property "$name" as DateTime from value "$value"',
+      );
+      return null;
+    }
+
+    _onParseError(_buildErrorMessage<DateTime>(name, value));
+    return null;
+  }
+
+  /// Extracts an enum value from the data map using a string parser.
+  ///
+  /// If the value is already of type [T], it is returned as-is.
+  /// If the value is a [String], it is parsed using [fromString].
+  ///
+  /// Returns `null` if:
+  /// - The key doesn't exist in the data map
+  /// - The value is `null`
+  /// - The value is not a [String] or [T]
+  /// - [fromString] returns `null`
+  T? getEnum<T extends Enum>(
+    String name, {
+    required T? Function(String value) fromString,
+  }) {
+    final value = data[name];
+
+    if (value == null) {
+      return null;
+    }
+
+    if (value is T) {
+      return value;
+    }
+
+    if (value is String) {
+      try {
+        final parsed = fromString(value);
+        if (parsed != null) {
+          return parsed;
+        }
+
+        _onParseError(
+          '[$runtimeType] Failed to parse property "$name" as $T from value "$value"',
+        );
+        return null;
+      } catch (e) {
+        _onParseError('[$runtimeType] Failed to parse property "$name": $e');
+        return null;
+      }
+    }
+
+    _onParseError(_buildErrorMessage<T>(name, value));
+    return null;
+  }
+
   /// Extracts a list of values from the data map with type safety.
   ///
   /// This method retrieves a list associated with [name] from the underlying

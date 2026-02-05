@@ -17,13 +17,28 @@ Type-safe map parsing for Dart. Simplifies extracting values from `Map<String, d
 - **Null safety** - Full null safety support out of the box
 - **Zero boilerplate** - Clean, readable model definitions
 
+## Why Parsable?
+
+Traditional approaches to parsing maps in Dart often involve:
+- Manual null checking for every field
+- Verbose casting: `data['name'] as String?`
+- Repetitive error handling
+- Difficult nested object parsing
+
+**Parsable** eliminates this boilerplate while providing:
+- Clean, readable code
+- Type safety
+- Automatic type conversions
+- Easy nested object handling
+- Consistent error handling
+
 ## Installation
 
 Add `parsable` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  parsable: ^0.2.0
+  parsable: ^0.3.0
 ```
 
 Then run:
@@ -184,6 +199,15 @@ class Event extends Parsable {
   // Parse String to DateTime
   DateTime? get startDate => get('startDate',
     parser: (String val) => DateTime.parse(val)
+  );
+
+  // Or use the built-in helper
+  DateTime? get startDateAuto => getDateTime('startDate');
+
+  // Parse String to enum using getEnum
+  EventStatus? get status => getEnum(
+    'status',
+    fromString: EventStatusX.fromString,
   );
 
   // Parse String to int
@@ -392,21 +416,6 @@ class UserPreferences extends Parsable {
       UserPreferences(data: map);
 }
 ```
-
-## Why Parsable?
-
-Traditional approaches to parsing maps in Dart often involve:
-- Manual null checking for every field
-- Verbose casting: `data['name'] as String?`
-- Repetitive error handling
-- Difficult nested object parsing
-
-**Parsable** eliminates this boilerplate while providing:
-- Clean, readable code
-- Type safety
-- Automatic type conversions
-- Easy nested object handling
-- Consistent error handling
 
 ## Additional Information
 

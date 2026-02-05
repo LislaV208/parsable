@@ -38,6 +38,23 @@ class TestUserWithAddress extends Parsable {
       TestUserWithAddress(data: map);
 }
 
+enum TestStatus { pending, active, archived }
+
+extension TestStatusX on TestStatus {
+  static TestStatus? fromString(String value) {
+    switch (value) {
+      case 'pending':
+        return TestStatus.pending;
+      case 'active':
+        return TestStatus.active;
+      case 'archived':
+        return TestStatus.archived;
+      default:
+        return null;
+    }
+  }
+}
+
 void main() {
   group('Basic type parsing', () {
     test('should parse String values correctly', () {
@@ -492,6 +509,115 @@ void main() {
       expect(errors, isNotEmpty);
       expect(errors.first, contains('index 1'));
       expect(errors.first, contains('Expected "String"'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
+    });
+  });
+
+  group('getDateTime helper', () {
+    test('should parse String to DateTime automatically', () {
+      final testParsable = TestUser(
+        data: {'createdAt': '2024-01-15T10:30:00Z'},
+      );
+
+      final createdAt = testParsable.getDateTime('createdAt');
+
+      expect(createdAt, isNotNull);
+      expect(createdAt, isA<DateTime>());
+      expect(createdAt?.year, equals(2024));
+      expect(createdAt?.month, equals(1));
+      expect(createdAt?.day, equals(15));
+    });
+
+    test('should return DateTime value when already provided', () {
+      final now = DateTime.utc(2024, 1, 15, 10, 30);
+      final testParsable = TestUser(data: {'createdAt': now});
+
+      final createdAt = testParsable.getDateTime('createdAt');
+
+      expect(createdAt, equals(now));
+    });
+
+    test('should return null and log error on invalid date string', () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      final testParsable = TestUser(data: {'createdAt': 'not-a-date'});
+
+      final createdAt = testParsable.getDateTime('createdAt');
+
+      expect(createdAt, isNull);
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('Failed to parse property "createdAt"'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
+    });
+  });
+
+  group('getEnum helper', () {
+    test('should parse String to enum using fromString', () {
+      final testParsable = TestUser(data: {'status': 'active'});
+
+      final status = testParsable.getEnum<TestStatus>(
+        'status',
+        fromString: TestStatusX.fromString,
+      );
+
+      expect(status, equals(TestStatus.active));
+    });
+
+    test('should return enum value when already provided', () {
+      final testParsable = TestUser(data: {'status': TestStatus.archived});
+
+      final status = testParsable.getEnum<TestStatus>(
+        'status',
+        fromString: TestStatusX.fromString,
+      );
+
+      expect(status, equals(TestStatus.archived));
+    });
+
+    test('should return null and log error for unknown value', () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      final testParsable = TestUser(data: {'status': 'unknown'});
+
+      final status = testParsable.getEnum<TestStatus>(
+        'status',
+        fromString: TestStatusX.fromString,
+      );
+
+      expect(status, isNull);
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('Failed to parse property "status"'));
+
+      // Reset error handler
+      Parsable.setOnParseError((message) {});
+    });
+
+    test('should return null when value is not String or enum', () {
+      final errors = <String>[];
+      Parsable.setOnParseError((message) {
+        errors.add(message);
+      });
+
+      final testParsable = TestUser(data: {'status': 123});
+
+      final status = testParsable.getEnum<TestStatus>(
+        'status',
+        fromString: TestStatusX.fromString,
+      );
+
+      expect(status, isNull);
+      expect(errors, isNotEmpty);
+      expect(errors.first, contains('Expected "TestStatus"'));
 
       // Reset error handler
       Parsable.setOnParseError((message) {});

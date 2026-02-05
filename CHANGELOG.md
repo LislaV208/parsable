@@ -1,3 +1,9 @@
+## 0.3.0
+
+* **Feature**: Added `getDateTime()` helper for automatic DateTime parsing
+* **Feature**: Added `getEnum()` helper using `fromString` parsing
+* Documentation updates for the new helpers
+
 ## 0.2.0
 
 * **BREAKING CHANGE**: Parser functions now use generic types for better type safety
