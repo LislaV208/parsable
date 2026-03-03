@@ -182,22 +182,27 @@ abstract class Parsable extends Equatable {
   /// int age = get('age') ?? 0;
   /// ```
   ///
+  /// If [parser] is provided and its input type [V] is nullable, parser will
+  /// also be called when the value is `null`.
+  ///
   /// Returns `null` if:
-  /// - The key doesn't exist in the data map
+  /// - The key doesn't exist in the data map (and parser is not provided, or parser input is non-nullable)
   /// - Type conversion fails
   /// - Parser throws an exception
   /// - Value type doesn't match expected parser input type [V]
   T? get<T, V>(String name, {T? Function(V value)? parser}) {
-    var value = data[name];
-    if (value == null) {
-      return null;
-    }
+    final value = data[name];
 
     // If parser is provided, try to use it
     if (parser != null) {
+      final parserAcceptsNull = null is V;
+      if (value == null && !parserAcceptsNull) {
+        return null;
+      }
+
       try {
-        if (value is V) {
-          return parser(value);
+        if (value is V || (value == null && parserAcceptsNull)) {
+          return parser(value as V);
         } else {
           _onParseError(
             '[$runtimeType] Failed to parse property "$name": expected value of type "$V", got "${value.runtimeType}"',
@@ -208,6 +213,10 @@ abstract class Parsable extends Equatable {
         _onParseError('[$runtimeType] Failed to parse property "$name": $e');
         return null;
       }
+    }
+
+    if (value == null) {
+      return null;
     }
 
     // If value is a map but no parser provided, this is an error

@@ -1,3 +1,9 @@
+## 0.4.0
+
+* **Feature**: `get<T, V>()` now calls the parser when the value is `null` (including missing keys) if parser input type `V` is nullable
+  * Enables null-aware parser fallbacks, e.g. `parser: (String? v) => v ?? 'default'`
+* Added tests for null-aware parser behavior (nullable and non-nullable parser inputs)
+
 ## 0.3.0
 
 * **Feature**: Added `getDateTime()` helper for automatic DateTime parsing

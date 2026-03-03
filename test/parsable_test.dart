@@ -456,6 +456,50 @@ void main() {
       },
     );
 
+    test('should call parser for null value when parser input is nullable', () {
+      final testParsable = TestUser(data: {'fallbackValue': null});
+
+      final result = testParsable.get<String, String?>(
+        'fallbackValue',
+        parser: (String? val) => val ?? 'default',
+      );
+
+      expect(result, equals('default'));
+    });
+
+    test(
+      'should call parser for missing key when parser input is nullable',
+      () {
+        final testParsable = TestUser(data: {});
+
+        final result = testParsable.get<String, String?>(
+          'fallbackValue',
+          parser: (String? val) => val ?? 'default',
+        );
+
+        expect(result, equals('default'));
+      },
+    );
+
+    test(
+      'should not call parser for null value when parser input is non-nullable',
+      () {
+        final testParsable = TestUser(data: {'fallbackValue': null});
+        var parserCalled = false;
+
+        final result = testParsable.get<String, String>(
+          'fallbackValue',
+          parser: (String val) {
+            parserCalled = true;
+            return val;
+          },
+        );
+
+        expect(result, isNull);
+        expect(parserCalled, isFalse);
+      },
+    );
+
     test('should parse list of strings to list of DateTimes', () {
       final testParsable = TestUser(
         data: {

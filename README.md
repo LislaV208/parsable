@@ -265,6 +265,15 @@ void main() {
 
 The parser function receives the exact type you specify (e.g., `String`) and the compiler ensures type safety at compile time. If the value in the map doesn't match the expected type, an error will be logged and `null` will be returned.
 
+If the parser input type is nullable (e.g., `String?`), parser is also called for `null` values and missing keys. This makes null-aware fallbacks possible:
+
+```dart
+String status = get<String, String?>(
+  'status',
+  parser: (String? val) => val ?? 'unknown',
+)!;
+```
+
 ### Complex Example with Multiple Nested Objects
 
 ```dart
